@@ -1,12 +1,9 @@
 package com.ll.datacleaner
 
 import com.ll.conf.AppConf
-import org.apache.spark.mllib.recommendation.{ALS, Rating}
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 
 
-object RatingData1 extends AppConf{
+object RatingData2 extends AppConf{
   def main(args: Array[String]): Unit = {
 
     spark.conf.set("spark.network.timeout","3000")
@@ -40,7 +37,7 @@ object RatingData1 extends AppConf{
     val ratingTmp5 = spark.sql(s"select userId, movieId, rating, rank from v_ratings2 where rank > ${(trainingDataCount / 3) * 2}")
     ratingTmp5.createTempView("v_ratings5")
 
-    spark.sql("drop table if exists trainingDataAsc")
+    spark.sql("drop table if exists trainingDataAsc1")
     spark.sql(s"create table trainingDataAsc1 as select userId, movieId, rating from v_ratings2 limit ${trainingDataCount/3}")
     spark.sql(s"insert into table trainingDataAsc1 select userId, movieId, rating from v_ratings4")
     spark.sql(s"insert into table trainingDataAsc1 select userId, movieId, rating from v_ratings5")
@@ -56,7 +53,7 @@ object RatingData1 extends AppConf{
     val ratingTmpDesc4 = spark.sql(s"select userId, movieId, rating, rank from v_ratingDesc2 where rank > ${(testDataCount / 3) * 2}")
     ratingTmpDesc4.createTempView("v_ratingDesc4")
 
-    spark.sql("drop table if exists testDataDesc")
+    spark.sql("drop table if exists testDataDesc1")
     spark.sql(s"create table testDataDesc1 as select userId, movieId, rating from v_ratingDesc2 limit ${testDataCount/3}")
     spark.sql(s"insert into table testDataDesc1 select userId, movieId, rating from v_ratingDesc3")
     spark.sql(s"insert into table testDataDesc1 select userId, movieId, rating from v_ratingDesc4")
