@@ -33,8 +33,6 @@ object RatingData1 extends AppConf{
     ratingTmp.createTempView("v_ratings")
     val ratingTmp2 = spark.sql(s"select userId, movieId, rating, row_number() over(partition by rating order by userId) as rank from v_ratings limit $trainingDataCount")
     ratingTmp2.createTempView("v_ratings2")
-//    val ratingTmp3 = spark.sql(s"select userId, movieId, rating, rank from v_ratings2 where rank < ${trainingDataCount/3}")
-//    ratingTmp3.createTempView("v_ratings3")
     val ratingTmp4 = spark.sql(s"select userId, movieId, rating, rank from v_ratings2 where rank > ${trainingDataCount/3} and rank < ${(trainingDataCount / 3) * 2}")
     ratingTmp4.createTempView("v_ratings4")
     val ratingTmp5 = spark.sql(s"select userId, movieId, rating, rank from v_ratings2 where rank > ${(trainingDataCount / 3) * 2}")

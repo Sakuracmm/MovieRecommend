@@ -3,6 +3,7 @@ package com.ll.datacleaner
 import com.ll.conf.AppConf
 
 
+//using
 object RatingData2 extends AppConf{
   def main(args: Array[String]): Unit = {
 

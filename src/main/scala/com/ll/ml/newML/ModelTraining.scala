@@ -1,20 +1,25 @@
-package com.ll.ml
+package com.ll.ml.newML
 
 import com.ll.conf.AppConf
-import com.ll.datacleaner.RatingData1.spark
-import org.apache.spark.mllib.recommendation.{ALS, Rating}
-import org.apache.spark.rdd.RDD
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd._
+import org.apache.spark.sql._
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.hive
+import org.apache.spark.mllib.recommendation._
+import org.apache.spark.rdd._
+
+import scala.math._
 
 //using
 object ModelTraining extends AppConf{
 
   def main(args: Array[String]): Unit = {
-
     //训练集
-    val trainingData = spark.sql("select * from trainingdataasc")
-    val testData = spark.sql("select * from testdatadesc1")
+    val trainingData = spark.sql("select * from new_trainingdata")
+    val testData = spark.sql("select * from new_testdata")
 
-    val ratingRDD: RDD[Rating] = spark.sql("select * from trainingdataasc").rdd.map(x => Rating(x.getInt(0), x.getInt(1),x.getDouble(2)))
+    val ratingRDD: RDD[Rating] = spark.sql("select * from new_trainingdata").rdd.map(x => Rating(x.getInt(0), x.getInt(1),x.getDouble(2)))
     val training2 = ratingRDD.map{
       case Rating(userid, movieid, rating) => (userid, movieid)
     }
@@ -28,12 +33,13 @@ object ModelTraining extends AppConf{
 
     //特征向量的个数
 //    val rank:Int = 10
-    val rank:Int = 1
+    val rank:Int = 10
     // 归整因子/正则因子，值越大越不容易产生过拟合现象，但是值越大会降低值的精准度
-    val lambda:List[Double] = List[Double](0.001,0.005,0.01,0.015,0.02,0.1)
+//    val lambda:List[Double] = List[Double](0.005,0.01,0.015,0.02,0.04,0.07,0.1,0.2)
+    val lambda:List[Double] = List[Double](0.07)
 //    val lambda:List[Double] = List[Double](0.0015)
     //迭代次数
-    val iteration: List[Int] = List[Int](10,20,30,40)
+    val iteration: List[Int] = List[Int](10)
 //    val iteration: List[Int] = List[Int](20)
     var bestRMSE: Double = Double.MaxValue
     var bestIteration = 0
@@ -52,16 +58,9 @@ object ModelTraining extends AppConf{
     for(l <- lambda; i <- iteration) {
       val model = ALS.train(ratingRDD, rank, i, l)
       //通过模型训练后预测的参数
-      val predict = model.predict(training2).map(x =>
-        x match {
-          case Rating(userid, movieid, rating) => ((userid, movieid), rating)
-//
-//          //其他所有情况抛出异常
-//          case _ => throw new Exception("error")
-      })
-//      {
-//        case Rating(userid, movieid, rating) => ((userid, movieid), rating)
-//      }
+      val predict = model.predict(training2).map {
+        case Rating(userid, movieid, rating) => ((userid, movieid), rating)
+      }
       val predictAndFact = predict.join(test2)
       val MSE = predictAndFact.map {
         case ((user, product), (r1, r2)) =>
@@ -69,19 +68,18 @@ object ModelTraining extends AppConf{
           err * err
       }.mean()
       val RMSE = math.sqrt(MSE)
-
+      //将得到的RMSE存放在不同的文件夹
+      model.save(spark.sparkContext, s"hdfs://slave1:9000/newMovieRecommendData/bestModel/$RMSE")
       //RMSE越小代表模型越好或是说越准确
       // 过拟合现象，如果训练的结果很完美，完美到脱离了实际
       //最终会得到RMSE最小也就是说最合适的结果的各项参数
       if(RMSE < bestRMSE){
-        //将得到的RMSE存放在不同的文件夹
-        model.save(spark.sparkContext, s"hdfs://slave1:9000/MovieRecommendData/bestModel/$RMSE")
         //如果找到了更小的值，作替换
         bestRMSE = RMSE
         bestIteration = i
         bestLambda = l
       }
-      println(s"Best mode is located in hdfs://slave1:9000/MovieRecommendData/bestModel/$RMSE")
+      println(s"Best mode is located in hdfs://slave1:9000/newMovieRecommendData/bestModel/$RMSE")
       println(s"Best bestRMSE is $RMSE")
       println(s"Best bestIteration is $bestIteration")
       println(s"Best bestLambda is $bestLambda")

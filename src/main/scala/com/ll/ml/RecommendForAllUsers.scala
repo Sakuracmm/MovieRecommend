@@ -5,7 +5,6 @@ import com.ll.conf.AppConf
 
 import java.util.Properties
 
-
 import org.apache.spark.mllib.recommendation.{MatrixFactorizationModel, Rating}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SaveMode}
