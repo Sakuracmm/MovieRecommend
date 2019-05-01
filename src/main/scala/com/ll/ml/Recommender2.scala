@@ -1,5 +1,6 @@
 package com.ll.ml
 
+import com.ll.caseclass.Result
 import com.ll.conf.AppConf
 import org.apache.spark.mllib.recommendation._
 
@@ -31,6 +32,12 @@ object Recommender2 extends AppConf{
     val rec = model.recommendProducts(uid, 5)
     //对所有Array集合中的元素取出product属性，这里的是电影id属性
     val recmovieid = rec.map(_.product)
+
+    rec.foreach(re => {
+
+
+
+    })
     println(s"我为用户 $uid 推荐了以下5部电影：")
 
 //    for(i <- recmovieid){

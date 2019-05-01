@@ -1,9 +1,12 @@
 package com.ll.ml
 
+import com.ll.caseclass.{Movies, Result}
 import com.ll.conf.AppConf
-import org.apache.spark.mllib.recommendation.MatrixFactorizationModel
+import org.apache.spark.mllib.recommendation.{MatrixFactorizationModel, Rating}
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{DataFrame, SaveMode}
 
-
+//using
 object Recommender extends AppConf{
 
   def main(args: Array[String]): Unit = {
@@ -32,7 +35,19 @@ object Recommender extends AppConf{
     val rec = model.recommendProducts(uid, 5)
     //对所有Array集合中的元素取出product属性，这里的是电影id属性
     val recmovieid = rec.map(_.product)
-    println(s"我为用户 $uid 推荐了以下5部电影：")
+
+    //    rec.foreach( re => {
+    //
+    //      val result: Result = Result(uid, re.product, re.rating)
+    //
+    //
+    //    })
+    import spark.implicits._
+    val recc: RDD[Rating] = spark.sparkContext.parallelize(rec,8)
+    val reccc: DataFrame = recc.map(re => Result(re.user,re.product,re.rating)).toDF
+    reccc.write.mode(SaveMode.Append).jdbc(jdbcUrl,recResultTable, prop)
+
+    println(s"为用户 $uid 推荐了以下5部电影：")
 
 //    for(i <- recmovieid){
 //      val moviename = spark.sql(s"select title from movies where movieId = $i").first().getString(0)
@@ -48,6 +63,7 @@ object Recommender extends AppConf{
     recmovieid.map(x => {
       val moviename = spark.sql(s"select title from movies where movieId = $x").first().getString(0)
 //      val moviedetail = spark.sql(s"insert into rec_movie select movieId, title, genres from movies where movieId  = $x")
+
       println(moviename)
       Unit
     })

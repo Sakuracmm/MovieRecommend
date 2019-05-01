@@ -10,10 +10,10 @@ object PopularMovies extends AppConf{
   val moviesRatingCount = spark.sql("select count(*) c, movieid from trainingdataasc group by movieid order by c desc")
   import spark.sqlContext.implicits._
 
-  spark.sql("create table if not exists top5DF(title string)")
+  spark.sql("create table if not exists top5DF(movieid int,title string)")
   val top5moviesid: Array[Int] = moviesRatingCount.limit(5).map(x => x.getInt(1)).collect()
   for(i <- top5moviesid){
-    spark.sql(s"insert into table top5DF select title from movies where movieid=$i")
+    spark.sql(s"insert into table top5DF select movieid,title from movies where movieid=$i")
   }
 
 

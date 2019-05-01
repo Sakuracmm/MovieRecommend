@@ -15,11 +15,11 @@ object RecommendForAllUsers extends AppConf{
   import spark.implicits._
   def main(args: Array[String]): Unit = {
 
-    val users = spark.sql("select distinct(userId) from trainingDataAsc order by userId asc")
+    val users = spark.sql("select distinct(userId) from new_trainingdata order by userId asc")
     val allusers = users.rdd.map(x => x.getInt(0)).toLocalIterator
 
     //1、可行，效率不高
-    val modelpath = "hdfs://slave1:9000/MovieRecommendData/tmp/bestModel/2.3171297248391123"
+    val modelpath = "hdfs://slave1:9000/newMovieRecommendData/bestModel/0.4672721037110623"
     val model = MatrixFactorizationModel.load(spark.sparkContext, modelpath)
 
     while (allusers.hasNext) {
@@ -45,7 +45,15 @@ object RecommendForAllUsers extends AppConf{
       .map(_.split("%"))
       .map(x => Result(x(0).trim.toInt, x(1).trim.toInt,x(2).trim.toDouble)).toDF()
 
-    uidDF.write.mode(SaveMode.Ignore).jdbc(jdbcUrl, recResultTable, prop)
+//    val movieId: Iterator[Int] = spark.sparkContext.parallelize(uidString,8)
+//        .map(_.split("%"))
+//        .map(x => x(1).trim.toInt)
+//        .toLocalIterator
+//
+//    movieId.foreach(mid => spark.sql(s"select title from new_movies where movieid = $mid"))
+
+
+    uidDF.write.mode(SaveMode.Append).jdbc(jdbcUrl, recResultTable, prop)
   }
   //结果写入到数据仓库
 //  def writeRecResultToMysql(uid: Array[Rating]): Unit ={}
